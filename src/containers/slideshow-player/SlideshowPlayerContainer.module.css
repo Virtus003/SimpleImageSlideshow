@@ -1,0 +1,130 @@
+.playerWrapper {
+  position: relative;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  height: fit-content;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background-color: #151515;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;  
+}
+
+.player {
+  position: relative;
+  margin-bottom: 32px;
+  width: 800px;
+  height: 450px;
+  background-color: #151515;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: row;
+}
+
+.playerPrev, .playerNext {
+  flex: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.exitNavigation {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 20%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.exitButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: 12vh;
+  width: 12vh;
+  background-color: gray;
+  font-size: 8vh;
+  line-height: 7vh;
+  text-align: center;
+  padding-top: 2vh;
+  border-radius: 12vh;
+  cursor: pointer;
+  margin-top: -15%;
+  transition: margin-top 0.3s;
+}
+
+.exitButton > i {
+  margin: 0 !important;
+}
+
+.exitButton.active {
+  margin-top: 0%;
+}
+
+.fullscreenIcon {
+  position: absolute;
+  padding: 12px;
+  font-size: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.galleryWrapper {
+  position: relative;
+  width: 800px;
+  height: 120px;
+  outline: 1px solid #f8f8f8;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.galleryContent {
+  position: relative;
+  display: flex;
+  flex-flow: row;
+  width: fit-content;
+}
+
+.galleryThumb {
+  position: relative;
+  width: 212px;
+  height: 120px;
+  margin-right: 12px;
+  background-color: #151515;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+}
+
+.galleryThumbActive {
+  opacity: 1;
+  outline: 1px solid #f0f0f0;
+}
+
+.galleryThumb:last-child {
+  margin-right: 0px;
+}
