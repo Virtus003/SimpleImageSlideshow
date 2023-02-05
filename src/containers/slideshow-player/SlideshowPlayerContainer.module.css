@@ -16,14 +16,30 @@
   width: 100%;
   height: 100%;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
   z-index: 0;
   background-color: #151515;
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;  
+  background-repeat: no-repeat;
+  opacity: 1;
+}
+
+.imageLeft {
+  left: -100% !important;
+}
+
+.imageCenter {
+  left: 0% !important;
+}
+
+.imageRight {
+  left: 100% !important;
+}
+
+.imageFade {
+  opacity: 0 !important;
 }
 
 .player {
@@ -37,6 +53,7 @@
   background-repeat: no-repeat;
   display: flex;
   flex-direction: row;
+  overflow: hidden;
 }
 
 .playerPrev, .playerNext {

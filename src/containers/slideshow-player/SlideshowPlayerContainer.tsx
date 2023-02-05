@@ -1,24 +1,33 @@
-import { createEffect, createSignal, onMount } from 'solid-js';
+import { JSXElement, createEffect, createSignal, onMount } from 'solid-js';
 import ClassNames from '../../utils/ClassNames/ClassNames';
 
-// Note: This is circular dependencies. Don't do this for real project! Separate your context
-import { useSlideshowContext } from "../home/HomeContainer";
+// Note: This will cause circular dependencies. Don't do this for real project! Separate your context
+import { useSlideshowContext } from '../home/HomeContainer';
 
 import styles from './SlideshowPlayerContainer.module.css';
 
 
 function SlideshowPlayerContainer() {
-  const { images } = useSlideshowContext();
+  const { images, configValue } = useSlideshowContext();
   const [ isPlayerOnFullscreen, setIsPlayerOnFullscreen ] = createSignal<Boolean>(false);
   const [ imagesInProgress, setImagesInProgress ] = createSignal<Array<number>>([]);
   const [ scaledImages, setScaledImages ] = createSignal<Array<string>>([]);
   const [ activeImageIndex, setActiveImageIndex ] = createSignal<number>(0);
-  const [ activeDisplayIndex, setActiveDisplayIndex ] = createSignal<number>(0);
   const [ shouldShowExitButton, setShouldShowExitButton ] = createSignal<Boolean>(false);
+  const [ displayedImages, setDisplayedImages ] = createSignal<Array<JSXElement>>([]);
+  const [ playerState, setPlayerState ] = createSignal<'READY' | 'TRANSITION'>('READY');
+  const [ imageTransitionClass, setImageTransitionClass ] = createSignal<Array<undefined | string>>([]);
   const processIncrement = 10;
   let totalProcessed = 0;
+  const leftPosition: Array<string> = [
+    '-100%',
+    '0%',
+    '100%'
+  ];
 
   onMount(() => {
+    setDisplayedImages(generatePlayerImages());
+
     const player = document.getElementById('player');
     player!.addEventListener('fullscreenchange', () => {
       if (document.fullscreenElement) {
@@ -92,28 +101,143 @@ function SlideshowPlayerContainer() {
     }
   }
 
+  function resetPlayerState() {
+    setImageTransitionClass([]);
+    setDisplayedImages(generatePlayerImages());
+    setPlayerState('READY');
+  }
+
+  function generatePlayerImages(): Array<JSXElement> {
+    const tempDisplayImages: Array<JSXElement> = [];
+
+    switch(configValue().transitionType) {
+      case 'FADE': {
+        break;
+      }
+      default:
+      case 'SLIDE': {
+        for (let i = -1; i < 2; i++) {
+          let imageIndex = activeImageIndex() + i;
+          if (imageIndex < 0) imageIndex = images().length - 1;
+          if (imageIndex === images().length) imageIndex = 0;
+          tempDisplayImages.push(
+            <div 
+              class={`${styles.image} ${imageTransitionClass()?.[i + 1] || '' }`} 
+              style={{ 
+                'background-image': `url('${images()[imageIndex]}')`,
+                'transition': `left ${configValue().transitionDuration}ms`,
+                'left': leftPosition[i + 1],
+              }} 
+            />
+          );
+        }    
+
+        break;
+      }
+    }
+
+    return tempDisplayImages;
+  }
+
   function handleThumbnailOnClick(index: number) {
     return () => {
-      setActiveImageIndex(index);
+      if (playerState() === 'READY' && index !== activeImageIndex()) {
+        setPlayerState('TRANSITION');
+
+        const updatedDisplayedImages = [...displayedImages()];
+        const updatedImageTransitionClass: Array<string> = [];
+
+        if (index > activeImageIndex()) {
+          updatedDisplayedImages[2] = (
+            <div 
+              class={`${styles.image} ${imageTransitionClass()?.[2] || '' }`} 
+              style={{ 
+                'background-image': `url('${images()[index]}')`,
+                'transition': `left ${configValue().transitionDuration}ms`,
+                'left': leftPosition[2],
+              }} 
+            />
+          );
+
+          updatedImageTransitionClass[1] = styles.imageLeft;
+          updatedImageTransitionClass[2] = styles.imageCenter;
+        }
+
+        if (index < activeImageIndex()) {
+          updatedDisplayedImages[0] = (
+            <div 
+              class={`${styles.image} ${imageTransitionClass()?.[0] || '' }`} 
+              style={{ 
+                'background-image': `url('${images()[index]}')`,
+                'transition': `left ${configValue().transitionDuration}ms`,
+                'left': leftPosition[0],
+              }} 
+            />
+          );
+
+          updatedImageTransitionClass[0] = styles.imageCenter;
+          updatedImageTransitionClass[1] = styles.imageRight;
+        }
+
+        setDisplayedImages(updatedDisplayedImages);
+        setActiveImageIndex(index);
+
+        // Hack to wait signal for displayed image
+        setTimeout(() => {
+          setImageTransitionClass(updatedImageTransitionClass);
+  
+          setTimeout(() => {
+            resetPlayerState();
+          }, configValue().transitionDuration);
+        }, 0)
+      }
     }
   }
 
   function handlePlayerNextOnClick() {
     return () => {
-      if (activeImageIndex() === images().length - 1) {
-        setActiveImageIndex(0);
-      } else {
-        setActiveImageIndex(activeImageIndex() + 1);
+      if (playerState() === 'READY') {
+        setPlayerState('TRANSITION');
+
+        const updatedImageTransitionClass: Array<string> = [];
+        updatedImageTransitionClass[1] = styles.imageLeft;
+        updatedImageTransitionClass[2] = styles.imageCenter;
+
+        setImageTransitionClass(updatedImageTransitionClass);
+
+        if (activeImageIndex() === images().length - 1) {
+          setActiveImageIndex(0);
+        } else {
+          setActiveImageIndex(activeImageIndex() + 1);
+        }
+
+        setTimeout(() => {
+          resetPlayerState();
+        }, configValue().transitionDuration);
       }
     }
   }
 
   function handlePlayerPrevOnClick() {
     return () => {
-      if (activeImageIndex() === 0) {
-        setActiveImageIndex(images().length - 1);
-      } else {
-        setActiveImageIndex(activeImageIndex() - 1);
+      if (playerState() === 'READY') {
+        setPlayerState('TRANSITION');
+
+        const updatedImageTransitionClass: Array<string> = [];
+        updatedImageTransitionClass[0] = styles.imageCenter;
+        updatedImageTransitionClass[1] = styles.imageRight;
+
+        setImageTransitionClass(updatedImageTransitionClass);
+
+        if (activeImageIndex() === 0) {
+          setActiveImageIndex(images().length - 1);
+        } else {
+          setActiveImageIndex(activeImageIndex() - 1);
+        }
+
+        setTimeout(() => {
+          resetPlayerState();
+        }, configValue().transitionDuration);
       }
     }
   }
@@ -138,7 +262,7 @@ function SlideshowPlayerContainer() {
     <div class={styles.playerWrapper}>
       <div>
         <div class={styles.player} id={'player'}>
-          <div class={styles.image} style={{ 'background-image': `url('${images()[activeImageIndex()]}')`}} />
+          { displayedImages() }
           <div class={styles.playerPrev} onclick={handlePlayerPrevOnClick()} />
           <div style={{ flex: 1 }} />
           <div class={styles.playerNext} onclick={handlePlayerNextOnClick()} />

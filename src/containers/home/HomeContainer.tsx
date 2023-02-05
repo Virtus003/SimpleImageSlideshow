@@ -9,10 +9,19 @@ import {
   useContext 
 } from "solid-js";
 
+interface ConfigValue {
+  transitionType: 'SLIDE' | 'FADE';
+  transitionDuration: number;
+  fullscreen: boolean;
+  autoplay: boolean;
+  autoplayDelay: number;
+};
 
 type SlideshowContextType = {
+  configValue: Accessor<ConfigValue>;
   images: Accessor<Array<string>>;
   pageState: Accessor<'CONFIG' | 'IMAGE'>;
+  setConfigValue: Setter<ConfigValue>;
   setImages: Setter<Array<string>>;
   setPageState: Setter<'CONFIG' | 'IMAGE'>;
 };
@@ -25,10 +34,19 @@ const SlideshowPlayerContainer = lazy(() => import('../slideshow-player/Slidesho
 function HomeContainer() {
   const [images, setImages] = createSignal<Array<string>>([]);
   const [pageState, setPageState] = createSignal<'CONFIG' | 'IMAGE'>('CONFIG');
+  const [configValue, setConfigValue] = createSignal<ConfigValue>({
+    fullscreen: false,
+    transitionDuration: 500,
+    transitionType: 'SLIDE',
+    autoplay: false,
+    autoplayDelay: 2000,
+  });
   
   const slideshowContextValue = {
+    configValue,
     images, 
     pageState, 
+    setConfigValue,
     setImages, 
     setPageState
   };
