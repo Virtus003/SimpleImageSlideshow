@@ -6,8 +6,9 @@ import {
   Match, 
   Setter, 
   Switch, 
-  useContext 
+  useContext,
 } from "solid-js";
+import { useSearchParams } from "@solidjs/router";
 
 interface ConfigValue {
   transitionType: 'SLIDE' | 'FADE';
@@ -20,10 +21,8 @@ interface ConfigValue {
 type SlideshowContextType = {
   configValue: Accessor<ConfigValue>;
   images: Accessor<Array<string>>;
-  pageState: Accessor<'CONFIG' | 'IMAGE'>;
   setConfigValue: Setter<ConfigValue>;
   setImages: Setter<Array<string>>;
-  setPageState: Setter<'CONFIG' | 'IMAGE'>;
 };
 
 const SlideshowContext = createContext<SlideshowContextType>({} as SlideshowContextType);
@@ -32,8 +31,8 @@ const ConfigContainer = lazy(() => import('../config/ConfigContainer'));
 const SlideshowPlayerContainer = lazy(() => import('../slideshow-player/SlideshowPlayerContainer'));
 
 function HomeContainer() {
+  const [searchParams] = useSearchParams();
   const [images, setImages] = createSignal<Array<string>>([]);
-  const [pageState, setPageState] = createSignal<'CONFIG' | 'IMAGE'>('CONFIG');
   const [configValue, setConfigValue] = createSignal<ConfigValue>({
     fullscreen: false,
     transitionDuration: 500,
@@ -45,19 +44,17 @@ function HomeContainer() {
   const slideshowContextValue = {
     configValue,
     images, 
-    pageState, 
     setConfigValue,
     setImages, 
-    setPageState
   };
   
   return (
     <SlideshowContext.Provider value={slideshowContextValue} >
       <Switch fallback={<ConfigContainer />}>
-        <Match when={pageState() === 'CONFIG'}>
+        <Match when={!Boolean(searchParams.type)}>
           <ConfigContainer />
         </Match>
-        <Match when={pageState() === 'IMAGE'}>
+        <Match when={searchParams.type === 'IMAGE'}>
           <SlideshowPlayerContainer />
         </Match>
       </Switch>

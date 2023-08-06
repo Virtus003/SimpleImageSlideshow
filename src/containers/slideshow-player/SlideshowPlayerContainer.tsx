@@ -1,4 +1,5 @@
-import { JSXElement, createEffect, createSignal, onMount } from 'solid-js';
+import { JSXElement, createEffect, createMemo, createSignal, onMount } from 'solid-js';
+import { useSearchParams } from "@solidjs/router";
 import ClassNames from '../../utils/ClassNames/ClassNames';
 
 // Note: This will cause circular dependencies. Don't do this for real project! Separate your context
@@ -8,8 +9,10 @@ import styles from './SlideshowPlayerContainer.module.css';
 
 
 function SlideshowPlayerContainer() {
+  const [_, setSearchParams] = useSearchParams();
   const { images, configValue } = useSlideshowContext();
   const [ isPlayerOnFullscreen, setIsPlayerOnFullscreen ] = createSignal<Boolean>(false);
+  const [ imageToProcess, setImageToProcess ] = createSignal<HTMLImageElement | undefined>();
   const [ imagesInProgress, setImagesInProgress ] = createSignal<Array<number>>([]);
   const [ scaledImages, setScaledImages ] = createSignal<Array<string>>([]);
   const [ activeImageIndex, setActiveImageIndex ] = createSignal<number>(0);
@@ -59,34 +62,64 @@ function SlideshowPlayerContainer() {
   })
 
   // Scale the thumbnail images so the render won't be too heavy for big images
-  function _scaleImage(index: number) {
-    const image = document.createElement('img');
-    image.src = images()[index];
-
-    image.onload = () => {
+  const _calculateScaledImage = createMemo(() => {
+    if (Boolean(imageToProcess())) {
       // Calculation to maintain image aspect ration
       let scaledWidth = 0;
       let scaledHeight = 0;
-      if (image.width > image.height) {
-        const widthFactor = Math.floor(image.width/212);
-        scaledWidth = Math.round(image.width/widthFactor);
-        scaledHeight = Math.round(image.height/image.width*scaledWidth);
+      if (imageToProcess()!.width > imageToProcess()!.height) {
+        const widthFactor = Math.floor(imageToProcess()!.width/212);
+        scaledWidth = Math.round(imageToProcess()!.width/widthFactor);
+        scaledHeight = Math.round(imageToProcess()!.height/imageToProcess()!.width*scaledWidth);
       } else {
-        const heightFactor = Math.floor(image.width/120);
-        scaledHeight = Math.round(image.height/heightFactor);
-        scaledWidth = Math.round(image.width/image.height*scaledHeight);
+        const heightFactor = Math.floor(imageToProcess()!.width/120);
+        scaledHeight = Math.round(imageToProcess()!.height/heightFactor);
+        scaledWidth = Math.round(imageToProcess()!.width/imageToProcess()!.height*scaledHeight);
       }
-
+  
       // Scale the image using canvas
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       ctx!.canvas.width = scaledWidth;
       ctx!.canvas.height = scaledHeight;
-      ctx!.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+      ctx!.drawImage(imageToProcess()!, 0, 0, scaledWidth, scaledHeight);
       const scaledUrl = canvas.toDataURL();
+      
+      return scaledUrl;
+    }
+
+    return null;
+  });
+
+  function _scaleImage(index: number) {
+    const image = document.createElement('img');
+    image.src = images()[index];
+
+    image.onload = () => {
+      // // Calculation to maintain image aspect ration
+      // let scaledWidth = 0;
+      // let scaledHeight = 0;
+      // if (image.width > image.height) {
+      //   const widthFactor = Math.floor(image.width/212);
+      //   scaledWidth = Math.round(image.width/widthFactor);
+      //   scaledHeight = Math.round(image.height/image.width*scaledWidth);
+      // } else {
+      //   const heightFactor = Math.floor(image.width/120);
+      //   scaledHeight = Math.round(image.height/heightFactor);
+      //   scaledWidth = Math.round(image.width/image.height*scaledHeight);
+      // }
+
+      // // Scale the image using canvas
+      // const canvas = document.createElement("canvas");
+      // const ctx = canvas.getContext("2d");
+      // ctx!.canvas.width = scaledWidth;
+      // ctx!.canvas.height = scaledHeight;
+      // ctx!.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+      setImageToProcess(image);
+      const scaledUrl = _calculateScaledImage();
 
       const updatedScaledImages = [...scaledImages()];
-      updatedScaledImages[index] = scaledUrl;
+      updatedScaledImages[index] = scaledUrl as string;
 
       setScaledImages(updatedScaledImages);
 
@@ -97,7 +130,6 @@ function SlideshowPlayerContainer() {
         updatedImagesInProgress.splice(imageInProgressIndex, 1);
         setImagesInProgress(updatedImagesInProgress);
       }
-
     }
   }
 
@@ -137,6 +169,10 @@ function SlideshowPlayerContainer() {
     }
 
     return tempDisplayImages;
+  }
+
+  function handleBackToConfig() {
+    return () => setSearchParams({type: null});
   }
 
   function handleThumbnailOnClick(index: number) {
@@ -260,7 +296,11 @@ function SlideshowPlayerContainer() {
 
   return (
     <div class={styles.playerWrapper}>
-      <div>
+      <div class={styles.playerContent}>
+        <div class={styles.backIcon} onClick={handleBackToConfig()}>
+          <i class="arrow left icon" />
+          <span>Back to config</span>
+        </div>
         <div class={styles.player} id={'player'}>
           { displayedImages() }
           <div class={styles.playerPrev} onclick={handlePlayerPrevOnClick()} />
@@ -285,14 +325,14 @@ function SlideshowPlayerContainer() {
             <div class={styles.playerNext} onclick={handlePlayerNextOnClick()} />
           </div>
         </div>
-      </div>
-      <div class={styles.galleryWrapper}>
-        <div class={styles.galleryContent}>
-          { images().map((_, index: number) => (
-            <div class={ClassNames(styles.galleryThumb, activeImageIndex() === index && styles.galleryThumbActive)} style={{'background-image': `url('${scaledImages()[index]}')`}} onClick={handleThumbnailOnClick(index)}>
-              <div class={`ui loader ${!Boolean(scaledImages()[index]) && 'active'}`} />
-            </div>
-          )) }
+        <div class={styles.galleryWrapper}>
+          <div class={styles.galleryContent}>
+            { images().map((_, index: number) => (
+              <div class={ClassNames(styles.galleryThumb, activeImageIndex() === index && styles.galleryThumbActive)} style={{'background-image': `url('${scaledImages()[index]}')`}} onClick={handleThumbnailOnClick(index)}>
+                <div class={`ui loader ${!Boolean(scaledImages()[index]) && 'active'}`} />
+              </div>
+            )) }
+          </div>
         </div>
       </div>
     </div>

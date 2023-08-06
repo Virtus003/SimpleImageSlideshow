@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { useSearchParams } from "@solidjs/router";
 
 // Note: This is circular dependencies. Don't do this for real project! Separate your context
 import { useSlideshowContext } from '../home/HomeContainer';
@@ -8,9 +9,10 @@ import styles from './ConfigContainer.module.css';
 
 
 function ConfigContainer() {
-  const { images, setImages, setPageState } = useSlideshowContext();
+  const [_, setSearchParams] = useSearchParams();
+  const { images, setImages } = useSlideshowContext();
   const [configActive, setConfigActive] = createSignal<boolean>(false);
-  const [inputDesc, setInputDesc] = createSignal<string>('');
+  const [inputDesc, setInputDesc] = createSignal<string>(images.length > 0 ? `${images.length} file(s) selected` :'');
 
   function handleSelectFolderOnClick() {
     return () => {
@@ -53,7 +55,7 @@ function ConfigContainer() {
       if (images().length === 0) {
         alert('Please select folder for the slideshow');
       } else {
-        setPageState('IMAGE');
+        setSearchParams({type: 'IMAGE'});
       }
     }
   }
