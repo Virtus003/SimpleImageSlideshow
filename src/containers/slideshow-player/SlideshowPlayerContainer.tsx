@@ -96,25 +96,6 @@ function SlideshowPlayerContainer() {
     image.src = images()[index];
 
     image.onload = () => {
-      // // Calculation to maintain image aspect ration
-      // let scaledWidth = 0;
-      // let scaledHeight = 0;
-      // if (image.width > image.height) {
-      //   const widthFactor = Math.floor(image.width/212);
-      //   scaledWidth = Math.round(image.width/widthFactor);
-      //   scaledHeight = Math.round(image.height/image.width*scaledWidth);
-      // } else {
-      //   const heightFactor = Math.floor(image.width/120);
-      //   scaledHeight = Math.round(image.height/heightFactor);
-      //   scaledWidth = Math.round(image.width/image.height*scaledHeight);
-      // }
-
-      // // Scale the image using canvas
-      // const canvas = document.createElement("canvas");
-      // const ctx = canvas.getContext("2d");
-      // ctx!.canvas.width = scaledWidth;
-      // ctx!.canvas.height = scaledHeight;
-      // ctx!.drawImage(image, 0, 0, scaledWidth, scaledHeight);
       setImageToProcess(image);
       const scaledUrl = _calculateScaledImage();
 
