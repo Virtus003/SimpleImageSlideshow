@@ -1,8 +1,14 @@
 /* @refresh reload */
-import { Router } from "@solidjs/router";
+import { Router, Route } from "@solidjs/router";
 import { render } from 'solid-js/web';
+
+import HomeContainer from "./containers/home/HomeContainer";
 
 import './index.css';
 import App from './pages';
 
-render(() => <Router><App /></Router>, document.getElementById('root') as HTMLElement);
+render(() => (
+  <Router root={App}>
+    <Route path="/" component={HomeContainer} />
+  </Router>
+  ), document.getElementById('root') as HTMLElement);
