@@ -10,13 +10,7 @@ import {
 } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 
-interface ConfigValue {
-  transitionType: 'SLIDE' | 'FADE';
-  transitionDuration: number;
-  fullscreen: boolean;
-  autoplay: boolean;
-  autoplayDelay: number;
-};
+import { ConfigValue } from '../../types/SlideshowPlayerTypes';
 
 type SlideshowContextType = {
   configValue: Accessor<ConfigValue>;
@@ -28,7 +22,7 @@ type SlideshowContextType = {
 const SlideshowContext = createContext<SlideshowContextType>({} as SlideshowContextType);
 
 const ConfigContainer = lazy(() => import('../config/ConfigContainer'));
-const SlideshowPlayerContainer = lazy(() => import('../slideshow-player/SlideshowPlayerContainer'));
+const SlideshowPlayerContainer = lazy(() => import('../slideshow-player-container/SlideshowPlayerContainer'));
 
 function HomeContainer() {
   const [searchParams] = useSearchParams();

@@ -1,25 +1,27 @@
 import { JSXElement, createEffect, createMemo, createSignal, onMount } from 'solid-js';
-import { useSearchParams } from "@solidjs/router";
+
+import { ConfigValue } from '../../types/SlideshowPlayerTypes';
 import ClassNames from '../../utils/ClassNames/ClassNames';
 
-// Note: This will cause circular dependencies. Don't do this for real project! Separate your context
-import { useSlideshowContext } from '../home/HomeContainer';
-
-import styles from './SlideshowPlayerContainer.module.css';
+import styles from './SlideshowPlayer.module.css';
 
 
-function SlideshowPlayerContainer() {
-  const [_, setSearchParams] = useSearchParams();
-  const { images, configValue } = useSlideshowContext();
-  const [ isPlayerOnFullscreen, setIsPlayerOnFullscreen ] = createSignal<Boolean>(false);
+type SlideshowPlayerProps = {
+  images: Array<string>,
+  configValue: ConfigValue
+};
+
+function SlideshowPlayer(props: SlideshowPlayerProps) {
+  const { images, configValue } = props;
+  const [ imageTransitionClass, setImageTransitionClass ] = createSignal<Array<undefined | string>>([]);
   const [ imageToProcess, setImageToProcess ] = createSignal<HTMLImageElement | undefined>();
   const [ imagesInProgress, setImagesInProgress ] = createSignal<Array<number>>([]);
+  const [ playerState, setPlayerState ] = createSignal<'READY' | 'TRANSITION'>('READY');
   const [ scaledImages, setScaledImages ] = createSignal<Array<string>>([]);
+  const [ displayedImages, setDisplayedImages ] = createSignal<Array<JSXElement>>([]);
+  const [ isPlayerOnFullscreen, setIsPlayerOnFullscreen ] = createSignal<Boolean>(false);
   const [ activeImageIndex, setActiveImageIndex ] = createSignal<number>(0);
   const [ shouldShowExitButton, setShouldShowExitButton ] = createSignal<Boolean>(false);
-  const [ displayedImages, setDisplayedImages ] = createSignal<Array<JSXElement>>([]);
-  const [ playerState, setPlayerState ] = createSignal<'READY' | 'TRANSITION'>('READY');
-  const [ imageTransitionClass, setImageTransitionClass ] = createSignal<Array<undefined | string>>([]);
   const processIncrement = 10;
   let totalProcessed = 0;
   const leftPosition: Array<string> = [
@@ -43,16 +45,16 @@ function SlideshowPlayerContainer() {
 
   // Create logic to process the thumbnail images in batch to ease the browser load
   createEffect(() => {
-    if (imagesInProgress().length === 0 && totalProcessed < images().length) {
+    if (imagesInProgress().length === 0 && totalProcessed < images.length) {
       totalProcessed += processIncrement;
       const updatedImagesInProgress = [];
-      if (images().length < processIncrement) {
-        for (let i = 0; i < images().length; i++) {
+      if (images.length < processIncrement) {
+        for (let i = 0; i < images.length; i++) {
           updatedImagesInProgress.push(i);
           _scaleImage(i);
         }
       } else {
-        for (let i = totalProcessed - processIncrement; i < (images().length > totalProcessed ? totalProcessed : images().length); i++) {
+        for (let i = totalProcessed - processIncrement; i < (images.length > totalProcessed ? totalProcessed : images.length); i++) {
           updatedImagesInProgress.push(i);
           _scaleImage(i);
         }
@@ -93,7 +95,7 @@ function SlideshowPlayerContainer() {
 
   function _scaleImage(index: number) {
     const image = document.createElement('img');
-    image.src = images()[index];
+    image.src = images[index];
 
     image.onload = () => {
       setImageToProcess(image);
@@ -114,16 +116,10 @@ function SlideshowPlayerContainer() {
     }
   }
 
-  function resetPlayerState() {
-    setImageTransitionClass([]);
-    setDisplayedImages(generatePlayerImages());
-    setPlayerState('READY');
-  }
-
   function generatePlayerImages(): Array<JSXElement> {
     const tempDisplayImages: Array<JSXElement> = [];
 
-    switch(configValue().transitionType) {
+    switch(configValue.transitionType) {
       case 'FADE': {
         break;
       }
@@ -131,14 +127,14 @@ function SlideshowPlayerContainer() {
       case 'SLIDE': {
         for (let i = -1; i < 2; i++) {
           let imageIndex = activeImageIndex() + i;
-          if (imageIndex < 0) imageIndex = images().length - 1;
-          if (imageIndex === images().length) imageIndex = 0;
+          if (imageIndex < 0) imageIndex = images.length - 1;
+          if (imageIndex === images.length) imageIndex = 0;
           tempDisplayImages.push(
             <div 
               class={`${styles.image} ${imageTransitionClass()?.[i + 1] || '' }`} 
               style={{ 
-                'background-image': `url('${images()[imageIndex]}')`,
-                'transition': `left ${configValue().transitionDuration}ms`,
+                'background-image': `url('${images[imageIndex]}')`,
+                'transition': `left ${configValue.transitionDuration}ms`,
                 'left': leftPosition[i + 1],
               }} 
             />
@@ -152,8 +148,10 @@ function SlideshowPlayerContainer() {
     return tempDisplayImages;
   }
 
-  function handleBackToConfig() {
-    return () => setSearchParams({type: null});
+  function resetPlayerState() {
+    setImageTransitionClass([]);
+    setDisplayedImages(generatePlayerImages());
+    setPlayerState('READY');
   }
 
   function handleThumbnailOnClick(index: number) {
@@ -169,8 +167,8 @@ function SlideshowPlayerContainer() {
             <div 
               class={`${styles.image} ${imageTransitionClass()?.[2] || '' }`} 
               style={{ 
-                'background-image': `url('${images()[index]}')`,
-                'transition': `left ${configValue().transitionDuration}ms`,
+                'background-image': `url('${images[index]}')`,
+                'transition': `left ${configValue.transitionDuration}ms`,
                 'left': leftPosition[2],
               }} 
             />
@@ -185,8 +183,8 @@ function SlideshowPlayerContainer() {
             <div 
               class={`${styles.image} ${imageTransitionClass()?.[0] || '' }`} 
               style={{ 
-                'background-image': `url('${images()[index]}')`,
-                'transition': `left ${configValue().transitionDuration}ms`,
+                'background-image': `url('${images[index]}')`,
+                'transition': `left ${configValue.transitionDuration}ms`,
                 'left': leftPosition[0],
               }} 
             />
@@ -205,7 +203,7 @@ function SlideshowPlayerContainer() {
   
           setTimeout(() => {
             resetPlayerState();
-          }, configValue().transitionDuration);
+          }, configValue.transitionDuration);
         }, 0)
       }
     }
@@ -222,7 +220,7 @@ function SlideshowPlayerContainer() {
 
         setImageTransitionClass(updatedImageTransitionClass);
 
-        if (activeImageIndex() === images().length - 1) {
+        if (activeImageIndex() === images.length - 1) {
           setActiveImageIndex(0);
         } else {
           setActiveImageIndex(activeImageIndex() + 1);
@@ -230,7 +228,7 @@ function SlideshowPlayerContainer() {
 
         setTimeout(() => {
           resetPlayerState();
-        }, configValue().transitionDuration);
+        }, configValue.transitionDuration);
       }
     }
   }
@@ -247,14 +245,14 @@ function SlideshowPlayerContainer() {
         setImageTransitionClass(updatedImageTransitionClass);
 
         if (activeImageIndex() === 0) {
-          setActiveImageIndex(images().length - 1);
+          setActiveImageIndex(images.length - 1);
         } else {
           setActiveImageIndex(activeImageIndex() - 1);
         }
 
         setTimeout(() => {
           resetPlayerState();
-        }, configValue().transitionDuration);
+        }, configValue.transitionDuration);
       }
     }
   }
@@ -276,48 +274,42 @@ function SlideshowPlayerContainer() {
   }
 
   return (
-    <div class={styles.playerWrapper}>
-      <div class={styles.playerContent}>
-        <div class={styles.backIcon} onClick={handleBackToConfig()}>
-          <i class="arrow left icon" />
-          <span>Back to config</span>
-        </div>
-        <div class={styles.player} id={'player'}>
-          { displayedImages() }
+    <div>
+      <div class={styles.player} id={'player'}>
+        { displayedImages() }
+        <div class={styles.playerPrev} onclick={handlePlayerPrevOnClick()} />
+        <div style={{ flex: 1 }} />
+        <div class={styles.playerNext} onclick={handlePlayerNextOnClick()} />
+        { !isPlayerOnFullscreen() && (
+          <div class={styles.fullscreenIcon} onclick={handleFullscreenIconOnClick()}>
+            <i class="expand icon" />
+          </div>
+        )}
+        <div class={styles.exitNavigation}>
           <div class={styles.playerPrev} onclick={handlePlayerPrevOnClick()} />
-          <div style={{ flex: 1 }} />
+          <div 
+            style={{ flex: 1 }}
+            onmouseleave={() => setShouldShowExitButton(false)}
+            onmouseenter={() => setShouldShowExitButton(true)}
+          >
+            <div class={ClassNames(styles.exitButton, (isPlayerOnFullscreen() && shouldShowExitButton()) && styles.active)} onclick={handleExitFullscreenOnClick()}>
+              <i class="times icon" />
+            </div>
+          </div>
           <div class={styles.playerNext} onclick={handlePlayerNextOnClick()} />
-          { !isPlayerOnFullscreen() && (
-            <div class={styles.fullscreenIcon} onclick={handleFullscreenIconOnClick()}>
-              <i class="expand icon" />
-            </div>
-          )}
-          <div class={styles.exitNavigation}>
-            <div class={styles.playerPrev} onclick={handlePlayerPrevOnClick()} />
-            <div 
-              style={{ flex: 1 }}
-              onmouseleave={() => setShouldShowExitButton(false)}
-              onmouseenter={() => setShouldShowExitButton(true)}
-            >
-              <div class={ClassNames(styles.exitButton, (isPlayerOnFullscreen() && shouldShowExitButton()) && styles.active)} onclick={handleExitFullscreenOnClick()}>
-                <i class="times icon" />
-              </div>
-            </div>
-            <div class={styles.playerNext} onclick={handlePlayerNextOnClick()} />
-          </div>
         </div>
-        <div class={styles.galleryWrapper}>
-          <div class={styles.galleryContent}>
-            { images().map((_, index: number) => (
-              <div class={ClassNames(styles.galleryThumb, activeImageIndex() === index && styles.galleryThumbActive)} style={{'background-image': `url('${scaledImages()[index]}')`}} onClick={handleThumbnailOnClick(index)}>
-                <div class={`ui loader ${!Boolean(scaledImages()[index]) && 'active'}`} />
-              </div>
-            )) }
-          </div>
+      </div>
+      <div class={styles.galleryWrapper}>
+        <div class={styles.galleryContent}>
+          { images.map((_, index: number) => (
+            <div class={ClassNames(styles.galleryThumb, activeImageIndex() === index && styles.galleryThumbActive)} style={{'background-image': `url('${scaledImages()[index]}')`}} onClick={handleThumbnailOnClick(index)}>
+              <div class={`ui loader ${!Boolean(scaledImages()[index]) && 'active'}`} />
+            </div>
+          )) }
         </div>
       </div>
     </div>
   );
 }
 
-export default SlideshowPlayerContainer;
+export default SlideshowPlayer;
